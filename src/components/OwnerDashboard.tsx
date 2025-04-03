@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { addReflection } from "../services/firebase/firebase";
 import ReflectionsOverview from "./ReflectionsOverview";
 import CreateReflection from "./CreateReflection";
 
