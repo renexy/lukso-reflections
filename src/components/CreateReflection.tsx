@@ -1,19 +1,42 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { Button, CircularProgress, TextField } from "@mui/material";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useUpProvider } from "../services/providers/UPProvider";
-import { addReflection } from "../services/firebase/firebase";
+import {
+  addReflection,
+  deleteReflection,
+  editReflection,
+  getReflectionById,
+} from "../services/firebase/firebase";
 import toast from "react-hot-toast";
 
 /* eslint-disable @typescript-eslint/no-empty-object-type */
 interface CreateReflectionProps {
   goBack: () => void;
+  selectedReflectionId: string | null;
 }
 
-const CreateReflection: React.FC<CreateReflectionProps> = ({ goBack }) => {
+const CreateReflection: React.FC<CreateReflectionProps> = ({
+  goBack,
+  selectedReflectionId,
+}) => {
   const { accounts } = useUpProvider();
   const [formData, setFormData] = useState<any>({ text: "" });
-  const [reflectionCreating, setReflectionCreating] = useState<boolean>(false);
+  const [reflectionCreating, setReflectionCreating] = useState<boolean>(true);
+
+  useEffect(() => {
+    if (selectedReflectionId) {
+      getReflection();
+    } else {
+      setReflectionCreating(false);
+    }
+  }, [selectedReflectionId]);
+
+  const getReflection = async () => {
+    const result = await getReflectionById(selectedReflectionId!);
+    setFormData({ text: (result as any).text });
+    setReflectionCreating(false);
+  };
 
   const handleChange = (
     event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -31,7 +54,11 @@ const CreateReflection: React.FC<CreateReflectionProps> = ({ goBack }) => {
     event.preventDefault();
     setReflectionCreating(true);
 
-    const data = await addReflection(accounts[0], formData.text);
+    const call = selectedReflectionId
+      ? editReflection(selectedReflectionId, formData.text)
+      : addReflection(accounts[0], formData.text);
+
+    const data = await call;
 
     if (data === -1) {
       toast.error("Error creating reflection");
@@ -43,6 +70,12 @@ const CreateReflection: React.FC<CreateReflectionProps> = ({ goBack }) => {
     setReflectionCreating(false);
   };
 
+  const deleteRe = async() => {
+    setReflectionCreating(true);
+    await deleteReflection(selectedReflectionId!);
+    goBack();
+  }
+
   return (
     <div
       className="bg-white bg-opacity-95 shadow-lg p-4 rounded-lg max-h-[540px] gap-10
@@ -50,7 +83,7 @@ const CreateReflection: React.FC<CreateReflectionProps> = ({ goBack }) => {
     >
       {reflectionCreating ? (
         <div className="relative animate-fadeInSlideUp justify-center items-center flex flex-col justify-center gap-[20px]">
-          <span>Creating reflection...</span>
+          <span>Please wait...</span>
           <CircularProgress color="secondary" />
         </div>
       ) : (
@@ -78,8 +111,19 @@ const CreateReflection: React.FC<CreateReflectionProps> = ({ goBack }) => {
               color="secondary"
               size="small"
             >
-              Add reflection 💡
+              {selectedReflectionId ? "Edit Reflection" : "Add Reflection"} 💡
             </Button>
+
+            {selectedReflectionId && (
+              <Button
+                onClick={deleteRe}
+                variant="contained"
+                color="secondary"
+                size="small"
+              >
+                Delete Reflection 💡
+              </Button>
+            )}
           </form>
           <Button
             variant="contained"

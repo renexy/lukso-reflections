@@ -1,6 +1,7 @@
 import { CircularProgress } from "@mui/material";
 import { useUpProvider } from "./services/providers/UPProvider";
 import OwnerDashboard from "./components/OwnerDashboard";
+import ReflectionsOverview from "./components/ReflectionsOverview";
 
 function App() {
   const { accounts, contextAccounts } = useUpProvider();
@@ -23,7 +24,13 @@ function App() {
 
   if (isOwner) return <OwnerDashboard />;
   else {
-    return <span>Visit</span>
+    return (
+      <ReflectionsOverview
+        isOwner={false}
+        setPageState={() => {}}
+        editReflection={() => {}}
+      />
+    );
   }
 }
 

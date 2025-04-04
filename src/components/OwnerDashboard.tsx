@@ -7,6 +7,7 @@ interface OwnerDashboardProps {}
 
 const OwnerDashboard: React.FC<OwnerDashboardProps> = () => {
   const [pageState, setPageState] = useState<"overview" | "create">("overview");
+  const [selectedReflectionId, setSelectedReflectionId] = useState<string | null>("");
 
   return (
     <>
@@ -14,10 +15,22 @@ const OwnerDashboard: React.FC<OwnerDashboardProps> = () => {
         <ReflectionsOverview
           isOwner={true}
           setPageState={() => setPageState("create")}
+          editReflection={(reflectionId: string) => {
+            setSelectedReflectionId(reflectionId);
+            setPageState("create");
+          }}
         />
       )}
 
-      {pageState === "create" && <CreateReflection goBack={() => setPageState("overview")}/>}
+      {pageState === "create" && (
+        <CreateReflection
+          selectedReflectionId={selectedReflectionId}
+          goBack={() => {
+            setSelectedReflectionId(null);
+            setPageState("overview");
+          }}
+        />
+      )}
     </>
   );
 };

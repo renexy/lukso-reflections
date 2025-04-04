@@ -27,6 +27,23 @@ export const app = initializeApp(firebaseConfig);
 
 export const db = getFirestore(app);
 
+export async function getReflectionById(reflectionId: string) {
+    try {
+        const reflectionDoc = doc(db, "reflections", reflectionId);
+        const docSnap = await getDoc(reflectionDoc);
+
+        if (docSnap.exists()) {
+            return { id: reflectionId, ...docSnap.data() };
+        } else {
+            console.error("Reflection not found");
+            return null;
+        }
+    } catch (error) {
+        console.error("Error getting reflection by ID:", error);
+        return null;
+    }
+}
+
 export async function getReflectionsByWallet(walletAddress: string) {
     const wa = walletAddress?.toLowerCase();
     const reflectionsRef = collection(db, "reflections");

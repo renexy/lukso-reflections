@@ -9,23 +9,27 @@ import {
 } from "@mui/material";
 import Button from "@mui/material/Button";
 import { useEffect, useState } from "react";
-import { getReflectionsByWallet } from "../services/firebase/firebase";
+import { getReflectionsByWallet, incrementLyxReceived } from "../services/firebase/firebase";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import TwitterIcon from "@mui/icons-material/Twitter";
 import EditIcon from "@mui/icons-material/Edit";
 import { useUpProvider } from "../services/providers/UPProvider";
+import { sendTransaction } from "../services/web3/Interactions";
+import toast from "react-hot-toast";
 
 /* eslint-disable @typescript-eslint/no-empty-object-type */
 interface ReflectionsOverviewProps {
   setPageState: (state: "overview" | "create") => void;
   isOwner: boolean;
+  editReflection: (reflectionId: string) => void;
 }
 
 const ReflectionsOverview: React.FC<ReflectionsOverviewProps> = ({
   setPageState,
   isOwner,
+  editReflection,
 }) => {
-  const { contextAccounts } = useUpProvider();
+  const { contextAccounts, chainId } = useUpProvider();
   const [reflectionsLoading, setReflectionsLoading] = useState<boolean>(true);
   const [reflections, setReflections] = useState<any>([]);
 
@@ -40,15 +44,15 @@ const ReflectionsOverview: React.FC<ReflectionsOverviewProps> = ({
   };
 
   const headerText = (text: string) => {
-    if (text && text.length > 35) {
-      return text.substring(0, 35) + "...";
+    if (text && text.length > 12) {
+      return text.substring(0, 12) + "...";
     }
     return text;
   };
 
   const bodyText = (text: string) => {
-    if (text && text.length > 35) {
-      return text.substring(34, text.length);
+    if (text && text.length > 12) {
+      return text.substring(11, text.length);
     }
     return text;
   };
@@ -56,6 +60,25 @@ const ReflectionsOverview: React.FC<ReflectionsOverviewProps> = ({
   const tweet = (text: string) => {
     const tweetUrl = `https://twitter.com/intent/tweet?text=${text}`;
     window.open(tweetUrl, "_blank");
+  };
+
+  const edit = (reflectionId: string) => {
+    editReflection(reflectionId);
+  };
+
+  const donate = async (reflection: any) => {
+    setReflectionsLoading(true);
+    const result = await sendTransaction(reflection.walletAddress, chainId);
+    if (result === -1) {
+      setReflectionsLoading(false);
+      toast.error('Failed!')
+      return;
+    }
+
+    await incrementLyxReceived(reflection.id, 1);
+    await getReflections();
+
+    toast.success('Donation sucessful!')
   };
 
   if (reflectionsLoading)
@@ -81,7 +104,7 @@ const ReflectionsOverview: React.FC<ReflectionsOverviewProps> = ({
           <div className="flex flex-col w-full gap-[12px] justify-center items-center">
             {reflections.map((reflection: any, index: number) => {
               return (
-                <Accordion key={index}>
+                <Accordion key={index} className="w-full">
                   <AccordionSummary
                     expandIcon={<ExpandMoreIcon />}
                     aria-controls="panel3-content"
@@ -100,24 +123,30 @@ const ReflectionsOverview: React.FC<ReflectionsOverviewProps> = ({
                         color="secondary"
                         onClick={() => tweet(reflection.text)}
                       />
-                      <EditIcon color="secondary" />
+                      {isOwner && (
+                        <EditIcon
+                          color="secondary"
+                          onClick={() => edit(reflection.id)}
+                        />
+                      )}
                     </div>
                   </AccordionSummary>
                   <AccordionDetails>
                     <Typography component="span">
                       {bodyText(reflection.text)}
-                      skyscrapers and neon lights. lone musician played his
-                      violin. The melody weaved through the streets, touching
-                      hearts of strangers passing by. For a moment, the world
-                      slowed, and in that fleeting harmony, they all felt
-                      connected.
                     </Typography>
                   </AccordionDetails>
                   <AccordionActions>
                     <Typography component="span">
                       Donations received: {reflection.lyxReceived} LYX
                     </Typography>
-                    <Button color="secondary" size="small">
+                    <Button
+                      color="secondary"
+                      size="small"
+                      onClick={() => {
+                        donate(reflection);
+                      }}
+                    >
                       Donate
                     </Button>
                   </AccordionActions>
